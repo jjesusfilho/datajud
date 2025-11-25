@@ -49,6 +49,22 @@ tribunals[tribunals$type == "TJ", ]   # Tribunais de Justiça Estaduais
 tribunals[tribunals$type == "TRT", ]  # Tribunais Regionais do Trabalho
 ```
 
+### 3. Nomes de tribunais simplificados
+
+O pacote aceita tanto nomes curtos quanto nomes completos de tribunais:
+
+```r
+# Formas equivalentes - use a forma curta para maior conveniência
+search_processes(tribunal = "trf1", ...)      # ✅ Recomendado
+search_processes(tribunal = "api_publica_trf1", ...)  # Também funciona
+
+# Exemplos de nomes curtos
+# TRF: trf1, trf2, trf3, trf4, trf5, trf6
+# TJ: tjsp, tjrj, tjmg, tjrs, tjba, tjpr, etc.
+# TRT: trt1, trt2, trt3, ..., trt24
+# Superiores: stj, tst, tse, stm
+```
+
 ## Exemplos de Uso
 
 ### Buscar por número CNJ
