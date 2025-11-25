@@ -73,24 +73,13 @@ search_processes(tribunal = "api_publica_trf1", ...)  # Também funciona
 # Número CNJ único
 results <- search_cnj(
   cnj_number = "00001234520204036100",
-  tribunal = "api_publica_trf1",
+  tribunal = "trf1",
   size = 10
 )
 
 # Múltiplos números CNJ
 cnj_numbers <- c("00001234520204036100", "00005678920204036100")
-results <- search_cnj(cnj_numbers, tribunal = "api_publica_trf1")
-```
-
-### Buscar por classe e órgão julgador
-
-```r
-results <- search_by_class(
-  tribunal = "api_publica_trf1",
-  classe_codigo = 1199,
-  orgao_julgador = "1ª Turma",
-  size = 20
-)
+results <- search_cnj(cnj_numbers, tribunal = "trf1")
 ```
 
 ### Buscar por intervalo de datas
@@ -98,7 +87,7 @@ results <- search_by_class(
 ```r
 # Buscar por data de ajuizamento
 results <- search_by_date(
-  tribunal = "api_publica_tjsp",
+  tribunal = "tjsp",
   date_field = "dataAjuizamento",
   start_date = "2020-01-01",
   end_date = "2020-12-31",
@@ -110,7 +99,7 @@ results <- search_by_date(
 
 ```r
 results <- search_advanced(
-  tribunal = "api_publica_trf1",
+  tribunal = "trf1",
   query_string = "ação civil pública",
   fields = c("classe.nome", "assuntos.nome"),
   size = 100
@@ -119,10 +108,20 @@ results <- search_advanced(
 
 ### Busca com todos os parâmetros disponíveis
 
+A função `search_processes()` permite buscar usando qualquer combinação de parâmetros:
+
 ```r
-# Busca completa usando a nova função search_processes
+# Busca por classe e órgão julgador
 results <- search_processes(
-  tribunal = "api_publica_trf1",
+  tribunal = "trf1",
+  classe_codigo = "1199",
+  orgaoJulgador_nome = "1ª Turma",
+  size = 20
+)
+
+# Busca completa com múltiplos critérios
+results <- search_processes(
+  tribunal = "trf1",
   grau = "2",
   classe_codigo = "1199",
   sistema_nome = "PJe",
@@ -155,7 +154,7 @@ query <- list(
 )
 
 results <- search_datajud(
-  tribunal = "api_publica_trf1",
+  tribunal = "trf1",
   query = query,
   size = 100
 )
@@ -175,31 +174,122 @@ head(subjects)
 # Acessar resposta bruta da API
 raw_results <- search_cnj(
   "00001234520204036100",
-  tribunal = "api_publica_trf1",
+  tribunal = "trf1",
   parse = FALSE
 )
 ```
 
-### Paginação para grandes conjuntos de resultados
+### Busca com paginação automática
+
+A função `search_processes_paginated()` permite buscar grandes volumes de dados com paginação automática e opção de salvar cada página:
 
 ```r
-# Recuperar até 5000 resultados com paginação automática
-query <- list(
-  range = list(
-    dataAjuizamento = list(
-      gte = "2020-01-01",
-      lte = "2020-01-31"
-    )
-  )
+# Busca simples com paginação
+results <- search_processes_paginated(
+  tribunal = "trf1",
+  grau = "2",
+  dataAjuizamento_start = "2020-01-01",
+  dataAjuizamento_end = "2020-01-31",
+  page_size = 100,    # Resultados por página
+  max_pages = 10      # Máximo de páginas a buscar
 )
 
-results <- search_with_pagination(
-  tribunal = "api_publica_trf1",
-  query = query,
-  max_results = 5000,
-  size_per_request = 1000
-)
+# Acessar resultados
+head(results$data)              # Todos os resultados combinados
+results$total_hits              # Total de resultados disponíveis
+results$pages_fetched           # Número de páginas buscadas
+results$pages[[1]]              # Primeira página separadamente
 ```
+
+#### Salvando páginas automaticamente
+
+Salve cada página em disco conforme são recuperadas:
+
+```r
+# Salvar páginas em formato RDS (padrão)
+results <- search_processes_paginated(
+  tribunal = "tjsp",
+  classe_codigo = "1199",
+  grau = "2",
+  page_size = 100,
+  max_pages = 20,
+  save_pages = TRUE,
+  output_dir = "dados_tjsp",
+  output_format = "rds"
+)
+
+# Salvar páginas em formato CSV
+results <- search_processes_paginated(
+  tribunal = "trf1",
+  sistema_nome = "PJe",
+  dataAjuizamento_start = "2023-01-01",
+  dataAjuizamento_end = "2023-12-31",
+  page_size = 100,
+  max_pages = 50,
+  save_pages = TRUE,
+  output_dir = "processos_pje_2023",
+  output_format = "csv"
+)
+
+# Salvar páginas em formato JSON
+results <- search_processes_paginated(
+  tribunal = "trt2",
+  assuntos_codigo = "7678",
+  page_size = 100,
+  save_pages = TRUE,
+  output_dir = "dados_trt",
+  output_format = "json"
+)
+
+# Verificar arquivos salvos
+results$files_saved
+# [1] "dados_trt/page_001_20250125_143022.json"
+# [2] "dados_trt/page_002_20250125_143023.json"
+# ...
+```
+
+#### Exemplo completo: Coleta em lote
+
+```r
+# Coletar dados por classe judicial com salvamento automático
+library(datajud)
+
+# Configurar API
+set_api_key(get_default_api_key())
+
+# Buscar e salvar processualmente
+results <- search_processes_paginated(
+  tribunal = "trf1",
+  classe_codigo = "1199",           # Ação Civil Pública
+  grau = "2",                       # Segunda instância
+  sistema_nome = "PJe",
+  dataAjuizamento_start = "2022-01-01",
+  dataAjuizamento_end = "2022-12-31",
+  page_size = 100,                  # 100 processos por página
+  max_pages = NULL,                 # Buscar todas as páginas disponíveis
+  save_pages = TRUE,                # Salvar cada página
+  output_dir = "coleta_acp_2022",
+  output_format = "csv"
+)
+
+# Resumo da coleta
+cat("Total de processos encontrados:", results$total_hits, "\n")
+cat("Páginas coletadas:", results$pages_fetched, "\n")
+cat("Processos baixados:", nrow(results$data), "\n")
+cat("Arquivos salvos:", length(results$files_saved), "\n")
+```
+
+**Formatos de saída disponíveis:**
+- `"rds"` - Formato nativo do R (preserva tipos de dados)
+- `"csv"` - Formato tabular compatível com Excel
+- `"json"` - Formato JSON (útil para outras linguagens)
+
+**Notas sobre paginação:**
+- A API do DataJud limita cada requisição a 10.000 resultados
+- Use `page_size` entre 100-1000 para melhor performance
+- `max_pages = NULL` buscará todas as páginas disponíveis
+- Um atraso de 0.5 segundos é aplicado entre requisições
+- Arquivos salvos incluem timestamp para evitar sobrescrita
 
 ## Tribunais Disponíveis
 
