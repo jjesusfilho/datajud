@@ -1,0 +1,361 @@
+pkgname <- "datajud"
+source(file.path(R.home("share"), "R", "examples-header.R"))
+options(warn = 1)
+library('datajud')
+
+base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+cleanEx()
+nameEx("extract_movements")
+### * extract_movements
+
+flush(stderr()); flush(stdout())
+
+### Name: extract_movements
+### Title: Extract Process Movements
+### Aliases: extract_movements
+
+### ** Examples
+
+## Not run: 
+##D results <- search_cnj("00001234520204036100", tribunal = "api_publica_trf1")
+##D movements <- extract_movements(results)
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("extract_subjects")
+### * extract_subjects
+
+flush(stderr()); flush(stdout())
+
+### Name: extract_subjects
+### Title: Extract Process Subjects
+### Aliases: extract_subjects
+
+### ** Examples
+
+## Not run: 
+##D results <- search_cnj("00001234520204036100", tribunal = "api_publica_trf1")
+##D subjects <- extract_subjects(results)
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("get_default_api_key")
+### * get_default_api_key
+
+flush(stderr()); flush(stdout())
+
+### Name: get_default_api_key
+### Title: Get Default DataJud API Key
+### Aliases: get_default_api_key
+
+### ** Examples
+
+get_default_api_key()
+
+
+
+cleanEx()
+nameEx("list_tribunals")
+### * list_tribunals
+
+flush(stderr()); flush(stdout())
+
+### Name: list_tribunals
+### Title: List Available Tribunals
+### Aliases: list_tribunals
+
+### ** Examples
+
+list_tribunals()
+
+# Filter by type
+tribunals <- list_tribunals()
+tribunals[tribunals$type == "TRF", ]
+
+
+
+cleanEx()
+nameEx("normalize_tribunal")
+### * normalize_tribunal
+
+flush(stderr()); flush(stdout())
+
+### Name: normalize_tribunal
+### Title: Normalize Tribunal Name
+### Aliases: normalize_tribunal
+
+### ** Examples
+
+normalize_tribunal("trf1")  # Returns "api_publica_trf1"
+normalize_tribunal("api_publica_trf1")  # Returns "api_publica_trf1"
+normalize_tribunal("tjsp")  # Returns "api_publica_tjsp"
+
+
+
+cleanEx()
+nameEx("search_advanced")
+### * search_advanced
+
+flush(stderr()); flush(stdout())
+
+### Name: search_advanced
+### Title: Advanced Search with Custom Query
+### Aliases: search_advanced
+
+### ** Examples
+
+## Not run: 
+##D # Set API key first
+##D set_api_key(get_default_api_key())
+##D 
+##D # Search using query string
+##D results <- search_advanced(
+##D   tribunal = "trf1",
+##D   query_string = "ação civil pública",
+##D   fields = c("classe.nome", "assuntos.nome")
+##D )
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("search_by_date")
+### * search_by_date
+
+flush(stderr()); flush(stdout())
+
+### Name: search_by_date
+### Title: Search by Date Range
+### Aliases: search_by_date
+
+### ** Examples
+
+## Not run: 
+##D # Set API key first
+##D set_api_key(get_default_api_key())
+##D 
+##D # Search by filing date
+##D results <- search_by_date(
+##D   tribunal = "trf1",
+##D   start_date = "2020-01-01",
+##D   end_date = "2020-12-31"
+##D )
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("search_cnj")
+### * search_cnj
+
+flush(stderr()); flush(stdout())
+
+### Name: search_cnj
+### Title: Search by CNJ Process Number
+### Aliases: search_cnj
+
+### ** Examples
+
+## Not run: 
+##D # Set API key first
+##D set_api_key(get_default_api_key())
+##D 
+##D # Search by CNJ number (using short tribunal name)
+##D results <- search_cnj("00001234520204036100", tribunal = "trf1")
+##D 
+##D # Search multiple CNJ numbers
+##D cnj_numbers <- c("00001234520204036100", "00005678920204036100")
+##D results <- search_cnj(cnj_numbers, tribunal = "trf1")
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("search_datajud")
+### * search_datajud
+
+flush(stderr()); flush(stdout())
+
+### Name: search_datajud
+### Title: Search DataJud API
+### Aliases: search_datajud
+
+### ** Examples
+
+## Not run: 
+##D # Set API key first
+##D set_api_key(get_default_api_key())
+##D 
+##D # Search with a simple match query
+##D query <- list(
+##D   match = list(
+##D     numeroProcesso = "00001234520204036100"
+##D   )
+##D )
+##D results <- search_datajud("api_publica_trf1", query)
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("search_processes")
+### * search_processes
+
+flush(stderr()); flush(stdout())
+
+### Name: search_processes
+### Title: Search Processes with All Available Parameters
+### Aliases: search_processes
+
+### ** Examples
+
+## Not run: 
+##D # Set API key first
+##D set_api_key(get_default_api_key())
+##D 
+##D # Search by grau and date range
+##D results <- search_processes(
+##D   tribunal = "trf1",
+##D   grau = "2",
+##D   dataAjuizamento_start = "2020-01-01",
+##D   dataAjuizamento_end = "2020-12-31"
+##D )
+##D 
+##D # Search by subject and court body
+##D results <- search_processes(
+##D   tribunal = "trf1",
+##D   assuntos_codigo = "10596",
+##D   orgaoJulgador_nome = "1ª Turma"
+##D )
+##D 
+##D # Search by class code and court body
+##D results <- search_processes(
+##D   tribunal = "trf1",
+##D   classe_codigo = "1199",
+##D   orgaoJulgador_nome = "1ª Turma"
+##D )
+##D 
+##D # Complex search with multiple criteria
+##D results <- search_processes(
+##D   tribunal = "tjsp",
+##D   classe_codigo = "1199",
+##D   grau = "2",
+##D   sistema_nome = "PJe",
+##D   nivelSigilo = 0
+##D )
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("search_processes_paginated")
+### * search_processes_paginated
+
+flush(stderr()); flush(stdout())
+
+### Name: search_processes_paginated
+### Title: Search Processes with Pagination
+### Aliases: search_processes_paginated
+
+### ** Examples
+
+## Not run: 
+##D # Set API key first
+##D set_api_key(get_default_api_key())
+##D 
+##D # Search with pagination
+##D results <- search_processes_paginated(
+##D   tribunal = "trf1",
+##D   grau = "2",
+##D   page_size = 100,
+##D   max_pages = 5
+##D )
+##D 
+##D # Search and save each page
+##D results <- search_processes_paginated(
+##D   tribunal = "trf1",
+##D   classe_codigo = "1199",
+##D   page_size = 100,
+##D   max_pages = 10,
+##D   save_pages = TRUE,
+##D   output_dir = "meus_dados",
+##D   output_format = "csv"
+##D )
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("search_with_pagination")
+### * search_with_pagination
+
+flush(stderr()); flush(stdout())
+
+### Name: search_with_pagination
+### Title: Search with Pagination
+### Aliases: search_with_pagination
+
+### ** Examples
+
+## Not run: 
+##D # Set API key first
+##D set_api_key(get_default_api_key())
+##D 
+##D # Search with pagination
+##D query <- list(
+##D   range = list(
+##D     dataAjuizamento = list(
+##D       gte = "2020-01-01",
+##D       lte = "2020-01-31"
+##D     )
+##D   )
+##D )
+##D results <- search_with_pagination(
+##D   tribunal = "api_publica_trf1",
+##D   query = query,
+##D   max_results = 5000
+##D )
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("set_api_key")
+### * set_api_key
+
+flush(stderr()); flush(stdout())
+
+### Name: set_api_key
+### Title: Set DataJud API Key
+### Aliases: set_api_key
+
+### ** Examples
+
+## Not run: 
+##D # Set API key directly
+##D set_api_key("cDZHYzlZa0JadVREZDJCendQbXY6SkJlTzNjLV9TRENyQk1RdnFKZGRQdw==")
+##D 
+##D # Or set via environment variable
+##D Sys.setenv(DATAJUD_API_KEY = "your_api_key_here")
+##D set_api_key()
+## End(Not run)
+
+
+
+### * <FOOTER>
+###
+cleanEx()
+options(digits = 7L)
+base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+grDevices::dev.off()
+###
+### Local variables: ***
+### mode: outline-minor ***
+### outline-regexp: "\\(> \\)?### [*]+" ***
+### End: ***
+quit('no')

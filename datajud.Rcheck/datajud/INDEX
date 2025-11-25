@@ -1,0 +1,15 @@
+extract_movements       Extract Process Movements
+extract_subjects        Extract Process Subjects
+get_default_api_key     Get Default DataJud API Key
+list_tribunals          List Available Tribunals
+normalize_tribunal      Normalize Tribunal Name
+search_advanced         Advanced Search with Custom Query
+search_by_date          Search by Date Range
+search_cnj              Search by CNJ Process Number
+search_datajud          Search DataJud API
+search_processes        Search Processes with All Available Parameters
+search_processes_paginated
+                        Search Processes with Pagination
+search_with_pagination
+                        Search with Pagination
+set_api_key             Set DataJud API Key

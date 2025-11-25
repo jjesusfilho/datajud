@@ -1,0 +1,22 @@
+Package: datajud
+Title: Access and Download Data from the DataJud API
+Version: 0.1.0
+Authors@R: 
+    person("Jose", "User", , "jose@example.com", role = c("aut", "cre"))
+Description: Provides functions to access and download judicial process metadata
+    from the DataJud Public API (https://datajud-wiki.cnj.jus.br/api-publica/),
+    maintained by the Brazilian National Council of Justice (CNJ). Includes
+    functions for searching by CNJ case numbers, custom queries, and retrieving
+    data from different Brazilian court systems.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports: httr, jsonlite, tibble
+Suggests: testthat (>= 3.0.0)
+Config/testthat/edition: 3
+NeedsCompilation: no
+Packaged: 2025-11-25 10:06:35 UTC; jose
+Author: Jose User [aut, cre]
+Maintainer: Jose User <jose@example.com>
+Built: R 4.5.1; ; 2025-11-25 10:06:38 UTC; unix

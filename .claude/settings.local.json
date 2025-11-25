@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:datajud-wiki.cnj.jus.br)",
+      "WebSearch",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(Rscript:*)",
+      "Bash(R CMD build:*)",
+      "Bash(R CMD check:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
