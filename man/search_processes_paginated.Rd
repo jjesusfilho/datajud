@@ -54,7 +54,7 @@ set_api_key(get_default_api_key())
 # Search with pagination
 results <- search_processes_paginated(
   tribunal = "trf1",
-  grau = "2",
+  grau = "G2",
   page_size = 100,
   max_pages = 5
 )

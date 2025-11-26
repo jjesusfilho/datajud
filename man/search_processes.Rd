@@ -42,7 +42,7 @@ Use list_tribunals() to see available options.}
 
 \item{numeroProcesso}{Character string with the CNJ process number (without formatting).}
 
-\item{grau}{Character string with the court level/instance identifier.}
+\item{grau}{Character string with the court level/instance identifier (e.g., "G1" for first instance, "G2" for second instance).}
 
 \item{nivelSigilo}{Integer with the confidentiality level.}
 
@@ -106,7 +106,7 @@ set_api_key(get_default_api_key())
 # Search by grau and date range
 results <- search_processes(
   tribunal = "trf1",
-  grau = "2",
+  grau = "G2",
   dataAjuizamento_start = "2020-01-01",
   dataAjuizamento_end = "2020-12-31"
 )
@@ -129,7 +129,7 @@ results <- search_processes(
 results <- search_processes(
   tribunal = "tjsp",
   classe_codigo = "1199",
-  grau = "2",
+  grau = "G2",
   sistema_nome = "PJe",
   nivelSigilo = 0
 )

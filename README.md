@@ -122,7 +122,7 @@ results <- search_processes(
 # Busca completa com múltiplos critérios
 results <- search_processes(
   tribunal = "trf1",
-  grau = "2",
+  grau = "G2",
   classe_codigo = "1199",
   sistema_nome = "PJe",
   nivelSigilo = 0,
@@ -187,7 +187,7 @@ A função `search_processes_paginated()` permite buscar grandes volumes de dado
 # Busca simples com paginação
 results <- search_processes_paginated(
   tribunal = "trf1",
-  grau = "2",
+  grau = "G2",
   dataAjuizamento_start = "2020-01-01",
   dataAjuizamento_end = "2020-01-31",
   page_size = 100,    # Resultados por página
@@ -210,7 +210,7 @@ Salve cada página em disco conforme são recuperadas:
 results <- search_processes_paginated(
   tribunal = "tjsp",
   classe_codigo = "1199",
-  grau = "2",
+  grau = "G2",
   page_size = 100,
   max_pages = 20,
   save_pages = TRUE,
@@ -261,7 +261,7 @@ set_api_key(get_default_api_key())
 results <- search_processes_paginated(
   tribunal = "trf1",
   classe_codigo = "1199",           # Ação Civil Pública
-  grau = "2",                       # Segunda instância
+  grau = "G2",                      # Segunda instância
   sistema_nome = "PJe",
   dataAjuizamento_start = "2022-01-01",
   dataAjuizamento_end = "2022-12-31",
@@ -311,7 +311,7 @@ A função `search_processes()` suporta todos os parâmetros documentados na API
 ### Parâmetros Principais
 - **id**: Identificador do processo
 - **numeroProcesso**: Número CNJ do processo
-- **grau**: Grau/instância do processo
+- **grau**: Grau/instância do processo (valores: "G1" para primeira instância, "G2" para segunda instância, etc.)
 - **nivelSigilo**: Nível de sigilo
 
 ### Parâmetros de Objetos Aninhados

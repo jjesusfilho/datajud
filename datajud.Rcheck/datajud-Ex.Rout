@@ -92,20 +92,20 @@ Type 'q()' to quit R.
 > ### ** Examples
 > 
 > list_tribunals()
-# A tibble: 61 × 3
-   alias            name                                   type    
-   <chr>            <chr>                                  <chr>   
- 1 api_publica_tst  Tribunal Superior do Trabalho          Superior
- 2 api_publica_tse  Tribunal Superior Eleitoral            Superior
- 3 api_publica_stj  Superior Tribunal de Justiça           Superior
- 4 api_publica_stm  Superior Tribunal Militar              Superior
- 5 api_publica_trf1 Tribunal Regional Federal da 1ª Região TRF     
- 6 api_publica_trf2 Tribunal Regional Federal da 2ª Região TRF     
- 7 api_publica_trf3 Tribunal Regional Federal da 3ª Região TRF     
- 8 api_publica_trf4 Tribunal Regional Federal da 4ª Região TRF     
- 9 api_publica_trf5 Tribunal Regional Federal da 5ª Região TRF     
-10 api_publica_trf6 Tribunal Regional Federal da 6ª Região TRF     
-# ℹ 51 more rows
+# A tibble: 88 × 3
+   alias              name                                    type    
+   <chr>              <chr>                                   <chr>   
+ 1 api_publica_tst    Tribunal Superior do Trabalho           Superior
+ 2 api_publica_tse    Tribunal Superior Eleitoral             Superior
+ 3 api_publica_stj    Superior Tribunal de Justiça            Superior
+ 4 api_publica_stm    Superior Tribunal Militar               Superior
+ 5 api_publica_tre-ac Tribunal Regional Eleitoral do Acre     TRE     
+ 6 api_publica_tre-al Tribunal Regional Eleitoral de Alagoas  TRE     
+ 7 api_publica_tre-ap Tribunal Regional Eleitoral do Amapá    TRE     
+ 8 api_publica_tre-am Tribunal Regional Eleitoral do Amazonas TRE     
+ 9 api_publica_tre-ba Tribunal Regional Eleitoral da Bahia    TRE     
+10 api_publica_tre-ce Tribunal Regional Eleitoral do Ceará    TRE     
+# ℹ 78 more rows
 > 
 > # Filter by type
 > tribunals <- list_tribunals()
@@ -398,7 +398,7 @@ Type 'q()' to quit R.
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  0.67 0.034 0.705 0 0 
+Time elapsed:  0.699 0.029 0.738 0 0 
 > grDevices::dev.off()
 null device 
           1 

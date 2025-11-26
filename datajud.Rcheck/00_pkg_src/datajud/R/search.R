@@ -1,3 +1,48 @@
+#' Format Date for DataJud API
+#'
+#' @description
+#' Converts date inputs to the format expected by the DataJud API (yyyymmddhhmmss).
+#' Accepts dates in "yyyy-mm-dd" format, Date objects, or already formatted strings.
+#'
+#' @param date_input Character string or Date object to be formatted.
+#' @param time_suffix Character string with time suffix (default: "000000" for start of day).
+#'
+#' @return Character string formatted as yyyymmddhhmmss.
+#' @keywords internal
+format_datajud_date <- function(date_input, time_suffix = "000000") {
+  if (is.null(date_input)) {
+    return(NULL)
+  }
+
+  date_str <- as.character(date_input)
+
+  # If already in yyyymmddhhmmss format (14 digits), return as is
+  if (grepl("^\\d{14}$", date_str)) {
+    return(date_str)
+  }
+
+  # If already in yyyymmdd format (8 digits), add time suffix
+  if (grepl("^\\d{8}$", date_str)) {
+    return(paste0(date_str, time_suffix))
+  }
+
+  # Try to parse common date formats
+  # Format: yyyy-mm-dd or yyyy/mm/dd
+  if (grepl("^\\d{4}[-/]\\d{2}[-/]\\d{2}", date_str)) {
+    # Remove separators and extract date
+    date_clean <- gsub("[-/]", "", substr(date_str, 1, 10))
+    return(paste0(date_clean, time_suffix))
+  }
+
+  # If it's a Date object, format it
+  if (inherits(date_input, "Date")) {
+    return(paste0(format(date_input, "%Y%m%d"), time_suffix))
+  }
+
+  # If we can't parse it, return as is and let the API handle it
+  return(date_str)
+}
+
 #' Search by CNJ Process Number
 #'
 #' @description
@@ -107,10 +152,10 @@ search_by_date <- function(tribunal, date_field = "dataAjuizamento",
   # Build range query
   range_params <- list()
   if (!is.null(start_date)) {
-    range_params$gte <- as.character(start_date)
+    range_params$gte <- format_datajud_date(start_date, "000000")
   }
   if (!is.null(end_date)) {
-    range_params$lte <- as.character(end_date)
+    range_params$lte <- format_datajud_date(end_date, "235959")
   }
 
   query <- list(
@@ -353,10 +398,10 @@ search_processes <- function(tribunal,
   if (!is.null(dataAjuizamento_start) || !is.null(dataAjuizamento_end)) {
     range_params <- list()
     if (!is.null(dataAjuizamento_start)) {
-      range_params$gte <- as.character(dataAjuizamento_start)
+      range_params$gte <- format_datajud_date(dataAjuizamento_start, "000000")
     }
     if (!is.null(dataAjuizamento_end)) {
-      range_params$lte <- as.character(dataAjuizamento_end)
+      range_params$lte <- format_datajud_date(dataAjuizamento_end, "235959")
     }
     must_conditions <- append(must_conditions, list(list(range = list(dataAjuizamento = range_params))))
   }
@@ -365,10 +410,10 @@ search_processes <- function(tribunal,
   if (!is.null(dataHoraUltimaAtualizacao_start) || !is.null(dataHoraUltimaAtualizacao_end)) {
     range_params <- list()
     if (!is.null(dataHoraUltimaAtualizacao_start)) {
-      range_params$gte <- as.character(dataHoraUltimaAtualizacao_start)
+      range_params$gte <- format_datajud_date(dataHoraUltimaAtualizacao_start, "000000")
     }
     if (!is.null(dataHoraUltimaAtualizacao_end)) {
-      range_params$lte <- as.character(dataHoraUltimaAtualizacao_end)
+      range_params$lte <- format_datajud_date(dataHoraUltimaAtualizacao_end, "235959")
     }
     must_conditions <- append(must_conditions, list(list(range = list(dataHoraUltimaAtualizacao = range_params))))
   }
@@ -377,10 +422,10 @@ search_processes <- function(tribunal,
   if (!is.null(movimentos_dataHora_start) || !is.null(movimentos_dataHora_end)) {
     range_params <- list()
     if (!is.null(movimentos_dataHora_start)) {
-      range_params$gte <- as.character(movimentos_dataHora_start)
+      range_params$gte <- format_datajud_date(movimentos_dataHora_start, "000000")
     }
     if (!is.null(movimentos_dataHora_end)) {
-      range_params$lte <- as.character(movimentos_dataHora_end)
+      range_params$lte <- format_datajud_date(movimentos_dataHora_end, "235959")
     }
     must_conditions <- append(must_conditions, list(list(range = list(movimentos.dataHora = range_params))))
   }
@@ -524,10 +569,10 @@ search_processes_paginated <- function(tribunal,
     if (!is.null(search_params[[start_param]]) || !is.null(search_params[[end_param]])) {
       range_params <- list()
       if (!is.null(search_params[[start_param]])) {
-        range_params$gte <- as.character(search_params[[start_param]])
+        range_params$gte <- format_datajud_date(search_params[[start_param]], "000000")
       }
       if (!is.null(search_params[[end_param]])) {
-        range_params$lte <- as.character(search_params[[end_param]])
+        range_params$lte <- format_datajud_date(search_params[[end_param]], "235959")
       }
       range_condition <- list()
       range_condition[[field]] <- range_params
