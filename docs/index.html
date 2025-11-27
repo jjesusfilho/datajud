@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">datajud</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.0</span>
       </span>
     </div>
 
@@ -329,6 +329,203 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Arquivos salvos:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">results</span><span class="op">$</span><span class="va">files_saved</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Formatos de saída disponíveis:</strong> - <code>"rds"</code> - Formato nativo do R (preserva tipos de dados) - <code>"csv"</code> - Formato tabular compatível com Excel - <code>"json"</code> - Formato JSON (útil para outras linguagens)</p>
 <p><strong>Notas sobre paginação:</strong> - A API do DataJud limita cada requisição a 10.000 resultados - Use <code>page_size</code> entre 100-1000 para melhor performance - <code>max_pages = NULL</code> buscará todas as páginas disponíveis - Um atraso de 0.5 segundos é aplicado entre requisições - Arquivos salvos incluem timestamp para evitar sobrescrita</p>
+</div>
+</div>
+<div class="section level3">
+<h3 id="baixando-múltiplas-classes-ou-assuntos">Baixando múltiplas classes ou assuntos<a class="anchor" aria-label="anchor" href="#baixando-m%C3%BAltiplas-classes-ou-assuntos"></a>
+</h3>
+<p>Quando você precisa baixar dados para múltiplas classes processuais ou assuntos, use <code><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">purrr::walk()</a></code> para iterar sobre os códigos de interesse:</p>
+<div class="section level4">
+<h4 id="exemplo-múltiplas-classes-sem-paginação">Exemplo: Múltiplas classes sem paginação<a class="anchor" aria-label="anchor" href="#exemplo-m%C3%BAltiplas-classes-sem-pagina%C3%A7%C3%A3o"></a>
+</h4>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">datajud</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://purrr.tidyverse.org/" class="external-link">purrr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Configurar API</span></span>
+<span><span class="fu"><a href="reference/set_api_key.html">set_api_key</a></span><span class="op">(</span><span class="fu"><a href="reference/get_default_api_key.html">get_default_api_key</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Definir códigos de classes processuais</span></span>
+<span><span class="va">classes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1199"</span>, <span class="st">"1200"</span>, <span class="st">"1181"</span>, <span class="st">"7"</span><span class="op">)</span>  <span class="co"># Exemplo: ACP, ADPF, ADI, etc.</span></span>
+<span></span>
+<span><span class="co"># Baixar dados para cada classe</span></span>
+<span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">walk</a></span><span class="op">(</span><span class="va">classes</span>, <span class="op">~</span><span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Baixando classe:"</span>, <span class="va">.x</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/search_processes.html">search_processes</a></span><span class="op">(</span></span>
+<span>    tribunal <span class="op">=</span> <span class="st">"trf1"</span>,</span>
+<span>    classe_codigo <span class="op">=</span> <span class="va">.x</span>,</span>
+<span>    grau <span class="op">=</span> <span class="st">"G2"</span>,</span>
+<span>    dataAjuizamento_start <span class="op">=</span> <span class="st">"2023-01-01"</span>,</span>
+<span>    dataAjuizamento_end <span class="op">=</span> <span class="st">"2023-12-31"</span>,</span>
+<span>    size <span class="op">=</span> <span class="fl">100</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Salvar cada classe em arquivo separado</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">results</span>, file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"classe_"</span>, <span class="va">.x</span>, <span class="st">".rds"</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  -&gt; Salvos"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span>, <span class="st">"processos\n"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  -&gt; Nenhum resultado encontrado\n"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Sys.sleep.html" class="external-link">Sys.sleep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>  <span class="co"># Respeitar limites da API</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="exemplo-múltiplas-classes-com-paginação">Exemplo: Múltiplas classes com paginação<a class="anchor" aria-label="anchor" href="#exemplo-m%C3%BAltiplas-classes-com-pagina%C3%A7%C3%A3o"></a>
+</h4>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">datajud</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://purrr.tidyverse.org/" class="external-link">purrr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Configurar API</span></span>
+<span><span class="fu"><a href="reference/set_api_key.html">set_api_key</a></span><span class="op">(</span><span class="fu"><a href="reference/get_default_api_key.html">get_default_api_key</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Definir códigos de classes processuais</span></span>
+<span><span class="va">classes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1199"</span>, <span class="st">"1200"</span>, <span class="st">"1181"</span>, <span class="st">"7"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Baixar dados paginados para cada classe</span></span>
+<span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">walk</a></span><span class="op">(</span><span class="va">classes</span>, <span class="op">~</span><span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Iniciando download da classe:"</span>, <span class="va">.x</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/search_processes_paginated.html">search_processes_paginated</a></span><span class="op">(</span></span>
+<span>    tribunal <span class="op">=</span> <span class="st">"trf1"</span>,</span>
+<span>    classe_codigo <span class="op">=</span> <span class="va">.x</span>,</span>
+<span>    grau <span class="op">=</span> <span class="st">"G2"</span>,</span>
+<span>    dataAjuizamento_start <span class="op">=</span> <span class="st">"2023-01-01"</span>,</span>
+<span>    dataAjuizamento_end <span class="op">=</span> <span class="st">"2023-12-31"</span>,</span>
+<span>    page_size <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>    max_pages <span class="op">=</span> <span class="cn">NULL</span>,              <span class="co"># Buscar todas as páginas</span></span>
+<span>    save_pages <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    output_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"classe_"</span>, <span class="va">.x</span><span class="op">)</span>,</span>
+<span>    output_format <span class="op">=</span> <span class="st">"csv"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Resumo</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Classe"</span>, <span class="va">.x</span>, <span class="st">"concluída:\n"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  - Total de processos:"</span>, <span class="va">results</span><span class="op">$</span><span class="va">total_hits</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  - Páginas baixadas:"</span>, <span class="va">results</span><span class="op">$</span><span class="va">pages_fetched</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  - Arquivos salvos:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">results</span><span class="op">$</span><span class="va">files_saved</span><span class="op">)</span>, <span class="st">"\n\n"</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Sys.sleep.html" class="external-link">Sys.sleep</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>  <span class="co"># Pausa entre classes para respeitar limites da API</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="exemplo-múltiplos-assuntos-com-paginação">Exemplo: Múltiplos assuntos com paginação<a class="anchor" aria-label="anchor" href="#exemplo-m%C3%BAltiplos-assuntos-com-pagina%C3%A7%C3%A3o"></a>
+</h4>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">datajud</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://purrr.tidyverse.org/" class="external-link">purrr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Configurar API</span></span>
+<span><span class="fu"><a href="reference/set_api_key.html">set_api_key</a></span><span class="op">(</span><span class="fu"><a href="reference/get_default_api_key.html">get_default_api_key</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Definir códigos de assuntos</span></span>
+<span><span class="va">assuntos</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"7678"</span>, <span class="st">"6326"</span>, <span class="st">"11253"</span><span class="op">)</span>  <span class="co"># Exemplo de códigos de assuntos</span></span>
+<span></span>
+<span><span class="co"># Baixar dados para cada assunto</span></span>
+<span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">walk</a></span><span class="op">(</span><span class="va">assuntos</span>, <span class="op">~</span><span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"========================================\n"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Baixando assunto:"</span>, <span class="va">.x</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"========================================\n"</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/search_processes_paginated.html">search_processes_paginated</a></span><span class="op">(</span></span>
+<span>    tribunal <span class="op">=</span> <span class="st">"tjsp"</span>,</span>
+<span>    assuntos_codigo <span class="op">=</span> <span class="va">.x</span>,</span>
+<span>    grau <span class="op">=</span> <span class="st">"G2"</span>,</span>
+<span>    dataAjuizamento_start <span class="op">=</span> <span class="st">"2022-01-01"</span>,</span>
+<span>    dataAjuizamento_end <span class="op">=</span> <span class="st">"2023-12-31"</span>,</span>
+<span>    page_size <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>    max_pages <span class="op">=</span> <span class="fl">50</span>,                <span class="co"># Limitar a 50 páginas por assunto</span></span>
+<span>    save_pages <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    output_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"assunto_"</span>, <span class="va">.x</span><span class="op">)</span>,</span>
+<span>    output_format <span class="op">=</span> <span class="st">"rds"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="co"># Log detalhado</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nResumo do assunto"</span>, <span class="va">.x</span>, <span class="st">":\n"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  - Total disponível:"</span>, <span class="va">results</span><span class="op">$</span><span class="va">total_hits</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  - Páginas baixadas:"</span>, <span class="va">results</span><span class="op">$</span><span class="va">pages_fetched</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  - Processos no data frame:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">results</span><span class="op">$</span><span class="va">data</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  - Diretório:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"assunto_"</span>, <span class="va">.x</span><span class="op">)</span>, <span class="st">"\n\n"</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Sys.sleep.html" class="external-link">Sys.sleep</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Download concluído para todos os assuntos!\n"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="exemplo-combinação-de-classes-e-tribunais">Exemplo: Combinação de classes e tribunais<a class="anchor" aria-label="anchor" href="#exemplo-combina%C3%A7%C3%A3o-de-classes-e-tribunais"></a>
+</h4>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">datajud</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://purrr.tidyverse.org/" class="external-link">purrr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Configurar API</span></span>
+<span><span class="fu"><a href="reference/set_api_key.html">set_api_key</a></span><span class="op">(</span><span class="fu"><a href="reference/get_default_api_key.html">get_default_api_key</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Criar grid de combinações</span></span>
+<span><span class="va">params</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span></span>
+<span>  tribunal <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"trf1"</span>, <span class="st">"trf2"</span>, <span class="st">"trf3"</span><span class="op">)</span>,</span>
+<span>  classe <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1199"</span>, <span class="st">"1200"</span><span class="op">)</span>,</span>
+<span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Baixar para cada combinação</span></span>
+<span><span class="fu"><a href="https://purrr.tidyverse.org/reference/pmap.html" class="external-link">pwalk</a></span><span class="op">(</span><span class="va">params</span>, <span class="op">~</span><span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Baixando:"</span>, <span class="va">..1</span>, <span class="st">"- Classe:"</span>, <span class="va">..2</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/search_processes_paginated.html">search_processes_paginated</a></span><span class="op">(</span></span>
+<span>    tribunal <span class="op">=</span> <span class="va">..1</span>,</span>
+<span>    classe_codigo <span class="op">=</span> <span class="va">..2</span>,</span>
+<span>    grau <span class="op">=</span> <span class="st">"G2"</span>,</span>
+<span>    dataAjuizamento_start <span class="op">=</span> <span class="st">"2023-01-01"</span>,</span>
+<span>    dataAjuizamento_end <span class="op">=</span> <span class="st">"2023-12-31"</span>,</span>
+<span>    page_size <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>    max_pages <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>    save_pages <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    output_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">..1</span>, <span class="st">"_classe_"</span>, <span class="va">..2</span><span class="op">)</span>,</span>
+<span>    output_format <span class="op">=</span> <span class="st">"csv"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  -&gt; Baixados"</span>, <span class="va">results</span><span class="op">$</span><span class="va">pages_fetched</span>, <span class="st">"páginas\n\n"</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Sys.sleep.html" class="external-link">Sys.sleep</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="dicas-para-downloads-em-lote">Dicas para downloads em lote<a class="anchor" aria-label="anchor" href="#dicas-para-downloads-em-lote"></a>
+</h4>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Gerenciamento de erros</strong>: Envolva as chamadas em <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch()</a></code> para continuar mesmo se uma classe falhar:</li>
+</ol>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">walk</a></span><span class="op">(</span><span class="va">classes</span>, <span class="op">~</span><span class="op">{</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>    <span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/search_processes_paginated.html">search_processes_paginated</a></span><span class="op">(</span></span>
+<span>      tribunal <span class="op">=</span> <span class="st">"trf1"</span>,</span>
+<span>      classe_codigo <span class="op">=</span> <span class="va">.x</span>,</span>
+<span>      <span class="co"># ... outros parâmetros ...</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"ERRO na classe"</span>, <span class="va">.x</span>, <span class="st">":"</span>, <span class="va">e</span><span class="op">$</span><span class="va">message</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<ol start="2" style="list-style-type: decimal">
+<li><p><strong>Salvamento progressivo</strong>: Use <code>save_pages = TRUE</code> para não perder dados se o processo for interrompido.</p></li>
+<li><p><strong>Controle de taxa</strong>: Ajuste <code><a href="https://rdrr.io/r/base/Sys.sleep.html" class="external-link">Sys.sleep()</a></code> entre iterações conforme necessário para respeitar limites da API.</p></li>
+<li><p><strong>Logging</strong>: Mantenha um registro das classes baixadas com sucesso:</p></li>
+</ol>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">log_file</span> <span class="op">&lt;-</span> <span class="st">"download_log.txt"</span></span>
+<span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">walk</a></span><span class="op">(</span><span class="va">classes</span>, <span class="op">~</span><span class="op">{</span></span>
+<span>  <span class="co"># ... código de download ...</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"- Classe"</span>, <span class="va">.x</span>, <span class="st">"OK\n"</span><span class="op">)</span>,</span>
+<span>      file <span class="op">=</span> <span class="va">log_file</span>, append <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 </div>
