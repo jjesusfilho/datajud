@@ -291,6 +291,203 @@ cat("Arquivos salvos:", length(results$files_saved), "\n")
 - Um atraso de 0.5 segundos é aplicado entre requisições
 - Arquivos salvos incluem timestamp para evitar sobrescrita
 
+### Baixando múltiplas classes ou assuntos
+
+Quando você precisa baixar dados para múltiplas classes processuais ou assuntos, use `purrr::walk()` para iterar sobre os códigos de interesse:
+
+#### Exemplo: Múltiplas classes sem paginação
+
+```r
+library(datajud)
+library(purrr)
+
+# Configurar API
+set_api_key(get_default_api_key())
+
+# Definir códigos de classes processuais
+classes <- c("1199", "1200", "1181", "7")  # Exemplo: ACP, ADPF, ADI, etc.
+
+# Baixar dados para cada classe
+walk(classes, ~{
+  cat("Baixando classe:", .x, "\n")
+
+  results <- search_processes(
+    tribunal = "trf1",
+    classe_codigo = .x,
+    grau = "G2",
+    dataAjuizamento_start = "2023-01-01",
+    dataAjuizamento_end = "2023-12-31",
+    size = 100
+  )
+
+  # Salvar cada classe em arquivo separado
+  if (!is.null(results) && nrow(results) > 0) {
+    saveRDS(results, file = paste0("classe_", .x, ".rds"))
+    cat("  -> Salvos", nrow(results), "processos\n")
+  } else {
+    cat("  -> Nenhum resultado encontrado\n")
+  }
+
+  Sys.sleep(1)  # Respeitar limites da API
+})
+```
+
+#### Exemplo: Múltiplas classes com paginação
+
+```r
+library(datajud)
+library(purrr)
+
+# Configurar API
+set_api_key(get_default_api_key())
+
+# Definir códigos de classes processuais
+classes <- c("1199", "1200", "1181", "7")
+
+# Baixar dados paginados para cada classe
+walk(classes, ~{
+  cat("Iniciando download da classe:", .x, "\n")
+
+  results <- search_processes_paginated(
+    tribunal = "trf1",
+    classe_codigo = .x,
+    grau = "G2",
+    dataAjuizamento_start = "2023-01-01",
+    dataAjuizamento_end = "2023-12-31",
+    page_size = 100,
+    max_pages = NULL,              # Buscar todas as páginas
+    save_pages = TRUE,
+    output_dir = paste0("classe_", .x),
+    output_format = "csv"
+  )
+
+  # Resumo
+  cat("Classe", .x, "concluída:\n")
+  cat("  - Total de processos:", results$total_hits, "\n")
+  cat("  - Páginas baixadas:", results$pages_fetched, "\n")
+  cat("  - Arquivos salvos:", length(results$files_saved), "\n\n")
+
+  Sys.sleep(2)  # Pausa entre classes para respeitar limites da API
+})
+```
+
+#### Exemplo: Múltiplos assuntos com paginação
+
+```r
+library(datajud)
+library(purrr)
+
+# Configurar API
+set_api_key(get_default_api_key())
+
+# Definir códigos de assuntos
+assuntos <- c("7678", "6326", "11253")  # Exemplo de códigos de assuntos
+
+# Baixar dados para cada assunto
+walk(assuntos, ~{
+  cat("========================================\n")
+  cat("Baixando assunto:", .x, "\n")
+  cat("========================================\n")
+
+  results <- search_processes_paginated(
+    tribunal = "tjsp",
+    assuntos_codigo = .x,
+    grau = "G2",
+    dataAjuizamento_start = "2022-01-01",
+    dataAjuizamento_end = "2023-12-31",
+    page_size = 100,
+    max_pages = 50,                # Limitar a 50 páginas por assunto
+    save_pages = TRUE,
+    output_dir = paste0("assunto_", .x),
+    output_format = "rds"
+  )
+
+  # Log detalhado
+  cat("\nResumo do assunto", .x, ":\n")
+  cat("  - Total disponível:", results$total_hits, "\n")
+  cat("  - Páginas baixadas:", results$pages_fetched, "\n")
+  cat("  - Processos no data frame:", nrow(results$data), "\n")
+  cat("  - Diretório:", paste0("assunto_", .x), "\n\n")
+
+  Sys.sleep(2)
+})
+
+cat("Download concluído para todos os assuntos!\n")
+```
+
+#### Exemplo: Combinação de classes e tribunais
+
+```r
+library(datajud)
+library(purrr)
+library(dplyr)
+
+# Configurar API
+set_api_key(get_default_api_key())
+
+# Criar grid de combinações
+params <- expand.grid(
+  tribunal = c("trf1", "trf2", "trf3"),
+  classe = c("1199", "1200"),
+  stringsAsFactors = FALSE
+)
+
+# Baixar para cada combinação
+pwalk(params, ~{
+  cat("Baixando:", ..1, "- Classe:", ..2, "\n")
+
+  results <- search_processes_paginated(
+    tribunal = ..1,
+    classe_codigo = ..2,
+    grau = "G2",
+    dataAjuizamento_start = "2023-01-01",
+    dataAjuizamento_end = "2023-12-31",
+    page_size = 100,
+    max_pages = 20,
+    save_pages = TRUE,
+    output_dir = paste0(..1, "_classe_", ..2),
+    output_format = "csv"
+  )
+
+  cat("  -> Baixados", results$pages_fetched, "páginas\n\n")
+
+  Sys.sleep(2)
+})
+```
+
+#### Dicas para downloads em lote
+
+1. **Gerenciamento de erros**: Envolva as chamadas em `tryCatch()` para continuar mesmo se uma classe falhar:
+
+```r
+walk(classes, ~{
+  tryCatch({
+    results <- search_processes_paginated(
+      tribunal = "trf1",
+      classe_codigo = .x,
+      # ... outros parâmetros ...
+    )
+  }, error = function(e) {
+    cat("ERRO na classe", .x, ":", e$message, "\n")
+  })
+})
+```
+
+2. **Salvamento progressivo**: Use `save_pages = TRUE` para não perder dados se o processo for interrompido.
+
+3. **Controle de taxa**: Ajuste `Sys.sleep()` entre iterações conforme necessário para respeitar limites da API.
+
+4. **Logging**: Mantenha um registro das classes baixadas com sucesso:
+
+```r
+log_file <- "download_log.txt"
+walk(classes, ~{
+  # ... código de download ...
+  cat(paste(Sys.time(), "- Classe", .x, "OK\n"),
+      file = log_file, append = TRUE)
+})
+```
+
 ## Tribunais Disponíveis
 
 O pacote suporta todos os sistemas judiciários brasileiros:
