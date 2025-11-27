@@ -1,6 +1,6 @@
 Package: datajud
 Title: Access and Download Data from the DataJud API
-Version: 0.1.0
+Version: 0.2.0
 Authors@R:
     person("Jose", "User", , "jose@example.com", role = c("aut", "cre"))
 Description: Provides functions to access and download judicial process metadata
