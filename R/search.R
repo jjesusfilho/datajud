@@ -504,6 +504,12 @@ search_processes_paginated <- function(tribunal,
                                        api_key = NULL) {
 
   # Validate output format
+  warning(
+    "Paging with from/size without a sort repeats and skips documents in the ",
+    "DataJud API. Prefer search_slice() with small slices.",
+    call. = FALSE
+  )
+
   output_format <- match.arg(output_format, c("rds", "csv", "json"))
 
   # Create output directory if needed

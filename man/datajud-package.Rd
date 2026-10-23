@@ -39,5 +39,10 @@ For more information about the DataJud API, visit:
 \author{
 \strong{Maintainer}: Jose User \email{jose@example.com}
 
+Authors:
+\itemize{
+  \item Jose User \email{jose@example.com}
+}
+
 }
 \keyword{internal}
