@@ -1,0 +1,22 @@
+[project]
+name = "datajud"
+version = "0.1.0"
+description = "Acesso à API pública do DataJud (CNJ)"
+readme = "README.md"
+authors = [
+    { name = "José", email = "jjesusfilho@gmail.com.br" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.28.1",
+    "pandas>=2.3.3",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
