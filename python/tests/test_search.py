@@ -31,7 +31,7 @@ def test_build_query() -> None:
     assert query == {"bool": {"must": [
         {"match": {"numeroProcesso": "00001234520204036100"}},
         {"match": {"classe.codigo": "1199"}},
-        {"range": {"dataAjuizamento": {"gte": "20200101000000", "lte": "20201231235959"}}},
+        datajud.date_range_query("dataAjuizamento", "2020-01-01", "2020-12-31"),
     ]}}
     with pytest.raises(ValueError):
         datajud.build_query()
@@ -55,3 +55,13 @@ def test_parse_and_extract() -> None:
     movs = datajud.extract_movements(df)
     assert movs.loc[0, "movimento_complemento"] == "sorteio"
     assert datajud.parse_response({"hits": {"hits": []}}).empty
+
+
+def test_date_range_query_covers_both_formats() -> None:
+    q = datajud.date_range_query("dataAjuizamento", end="20200131")
+    iso, compact = (c["range"]["dataAjuizamento"] for c in q["bool"]["should"])
+    assert iso == {"lte": "2020-01-31T23:59:59.999Z"}
+    assert compact == {"lte": "20200131235959"}
+    assert q["bool"]["minimum_should_match"] == 1
+    with pytest.raises(ValueError):
+        datajud.date_range_query("dataAjuizamento", "31/01/2020")

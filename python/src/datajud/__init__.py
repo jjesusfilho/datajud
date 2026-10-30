@@ -13,6 +13,7 @@ from .api_request import (
 from .config import get_api_key, get_default_api_key, set_api_key
 from .search import (
     build_query,
+    date_range_query,
     extract_movements,
     extract_subjects,
     format_datajud_date,
@@ -22,7 +23,13 @@ from .search import (
     search_processes,
     search_processes_paginated,
 )
-from .slices import add_cnj_prefix, parse_datajud_date, search_slice, split_by_cnj_prefix
+from .slices import (
+    add_cnj_prefix,
+    parse_datajud_date,
+    search_slice,
+    split_by_cnj_prefix,
+    split_date_range,
+)
 from .tribunals import list_tribunals, normalize_tribunal, validate_tribunal
 
 __all__ = [
@@ -32,6 +39,7 @@ __all__ = [
     "add_cnj_prefix",
     "build_query",
     "check_complete",
+    "date_range_query",
     "datajud_request",
     "extract_movements",
     "extract_subjects",
@@ -52,5 +60,6 @@ __all__ = [
     "search_slice",
     "set_api_key",
     "split_by_cnj_prefix",
+    "split_date_range",
     "validate_tribunal",
 ]

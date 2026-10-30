@@ -72,13 +72,45 @@ def format_datajud_date(date_input: DateLike, time_suffix: str = "000000") -> st
     return date_str
 
 
-def _date_range(start: DateLike, end: DateLike) -> dict[str, str]:
-    params: dict[str, str] = {}
+def _compact_and_iso(date_input: DateLike, time_suffix: str, millis: str) -> tuple[str, str]:
+    compact = format_datajud_date(date_input, time_suffix)
+    if compact is None or not re.fullmatch(r"\d{14}", compact):
+        raise ValueError(f"Unrecognized date: {date_input!r}")
+    c = compact
+    iso = f"{c[:4]}-{c[4:6]}-{c[6:8]}T{c[8:10]}:{c[10:12]}:{c[12:14]}.{millis}Z"
+    return compact, iso
+
+
+def date_range_query(field: str, start: DateLike = None, end: DateLike = None) -> dict[str, Any]:
+    """Filtro de intervalo de datas que funciona com os dois formatos do índice.
+
+    O DataJud grava as datas ora em ISO (``2024-01-16T12:41:15.000Z``), ora no
+    formato compacto (``20240311124906``). O índice lê as compactas como
+    milissegundos desde 1970, de modo que um ``range`` em ISO só encontra os
+    documentos gravados em ISO e um ``range`` compacto só os compactos. Este
+    filtro combina os dois com ``should``.
+
+    Args:
+        field: Campo de data, por exemplo ``"dataAjuizamento"``.
+        start: Início do intervalo, inclusive.
+        end: Fim do intervalo, inclusive (o dia inteiro, se for só a data).
+
+    Examples:
+        >>> date_range_query("dataAjuizamento", "2024-01-01", "2024-01-31")
+        {'bool': {'should': [{'range': {'dataAjuizamento': {'gte': '2024-01-01T00:00:00.000Z', 'lte': '2024-01-31T23:59:59.999Z'}}}, {'range': {'dataAjuizamento': {'gte': '20240101000000', 'lte': '20240131235959'}}}], 'minimum_should_match': 1}}
+    """
+    if start is None and end is None:
+        raise ValueError("At least one of start or end must be provided.")
+    iso: dict[str, str] = {}
+    compact: dict[str, str] = {}
     if start is not None:
-        params["gte"] = format_datajud_date(start, "000000")  # type: ignore[assignment]
+        compact["gte"], iso["gte"] = _compact_and_iso(start, "000000", "000")
     if end is not None:
-        params["lte"] = format_datajud_date(end, "235959")  # type: ignore[assignment]
-    return params
+        compact["lte"], iso["lte"] = _compact_and_iso(end, "235959", "999")
+    return {"bool": {
+        "should": [{"range": {field: iso}}, {"range": {field: compact}}],
+        "minimum_should_match": 1,
+    }}
 
 
 def _clean_cnj(number: str) -> str:
@@ -110,7 +142,7 @@ def build_query(**params: Any) -> dict[str, Any]:
         start = params.get(f"{name}_start")
         end = params.get(f"{name}_end")
         if start is not None or end is not None:
-            must.append({"range": {field: _date_range(start, end)}})
+            must.append(date_range_query(field, start, end))
 
     if not must:
         raise ValueError("At least one search parameter must be provided.")
@@ -160,7 +192,7 @@ def search_by_date(
     """
     if start_date is None and end_date is None:
         raise ValueError("At least one of start_date or end_date must be provided.")
-    query = {"range": {date_field: _date_range(start_date, end_date)}}
+    query = date_range_query(date_field, start_date, end_date)
     return search_datajud(tribunal, query, size, parse, api_key)
 
 

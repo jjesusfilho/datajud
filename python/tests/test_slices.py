@@ -132,3 +132,23 @@ def test_datajud_request_retries_connection_errors(monkeypatch: pytest.MonkeyPat
     with pytest.raises(datajud.DataJudError, match="ReadTimeout"):
         datajud.datajud_request("tjsp", {}, api_key="k", max_tries=3)
     assert calls == 3
+
+
+def test_parse_datajud_date_keeps_series_index() -> None:
+    import pandas as pd
+
+    x = pd.Series(["2020-01-31", "20231110"], index=[5, 9])
+    assert datajud.parse_datajud_date(x).index.tolist() == [5, 9]
+
+
+def test_split_date_range() -> None:
+    import datetime as dt
+
+    parts = datajud.split_date_range("2024-01-01", "2024-03-31", parts=4)
+    assert parts[0][0] == dt.date(2024, 1, 1)
+    assert parts[-1][1] == dt.date(2024, 3, 31)
+    for (_, end), (start, _) in zip(parts, parts[1:]):
+        assert start - end == dt.timedelta(days=1)
+    assert len(datajud.split_date_range("2024-01-01", "2024-01-02", parts=10)) == 2
+    with pytest.raises(ValueError):
+        datajud.split_date_range("2024-01-01", "2024-01-01")

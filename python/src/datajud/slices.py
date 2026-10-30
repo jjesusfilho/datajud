@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import logging
 import re
 import time
@@ -123,7 +124,10 @@ def add_cnj_prefix(query: dict[str, Any], prefix: str) -> dict[str, Any]:
     """Restringe a consulta aos números CNJ que começam com ``prefix``.
 
     Os sete primeiros dígitos do número CNJ são sequenciais, de modo que os
-    prefixos dividem uma fatia em partes de tamanho parecido.
+    prefixos dividem uma fatia em partes de tamanho parecido. Prefixos curtos
+    casam com quase todos os números do índice e costumam estourar o tempo do
+    gateway; prefira dividir por datas (:func:`split_date_range`) e use o
+    prefixo só quando ele já for longo.
 
     Examples:
         >>> add_cnj_prefix({"term": {"classe.codigo": 49}}, "10")
@@ -140,7 +144,8 @@ def split_by_cnj_prefix(query: dict[str, Any], prefix: str = "") -> dict[str, di
     """Divide a consulta em dez, uma para cada dígito seguinte a ``prefix``.
 
     Use para dividir uma fatia que :func:`search_slice` recusou por ser grande,
-    descendo um dígito por vez.
+    descendo um dígito por vez. Veja o alerta de :func:`add_cnj_prefix` sobre
+    prefixos curtos.
 
     Returns:
         Dicionário de dez consultas, indexado pelos novos prefixos.
@@ -150,6 +155,33 @@ def split_by_cnj_prefix(query: dict[str, Any], prefix: str = "") -> dict[str, di
         ['10', '11', '12']
     """
     return {f"{prefix}{d}": add_cnj_prefix(query, f"{prefix}{d}") for d in range(10)}
+
+
+def split_date_range(
+    start: dt.date | str, end: dt.date | str, parts: int = 2
+) -> list[tuple[dt.date, dt.date]]:
+    """Divide o intervalo de dias ``[start, end]`` em até ``parts`` intervalos contíguos.
+
+    Use para dividir uma fatia que :func:`search_slice` recusou: o filtro de
+    datas (:func:`date_range_query`) é barato, ao contrário dos prefixos curtos
+    do número CNJ. ``SliceTooLargeError.total // max_size + 1`` é uma boa
+    escolha de ``parts``.
+
+    Raises:
+        ValueError: Se o intervalo tiver um dia só.
+
+    Examples:
+        >>> split_date_range("2024-01-01", "2024-01-10", parts=3)
+        [(datetime.date(2024, 1, 1), datetime.date(2024, 1, 3)), (datetime.date(2024, 1, 4), datetime.date(2024, 1, 6)), (datetime.date(2024, 1, 7), datetime.date(2024, 1, 10))]
+    """
+    start = dt.date.fromisoformat(start) if isinstance(start, str) else start
+    end = dt.date.fromisoformat(end) if isinstance(end, str) else end
+    days = (end - start).days + 1
+    if days < 2:
+        raise ValueError("Cannot split a range of a single day.")
+    parts = max(2, min(parts, days))
+    bounds = [start + dt.timedelta(days=days * i // parts) for i in range(parts + 1)]
+    return [(bounds[i], bounds[i + 1] - dt.timedelta(days=1)) for i in range(parts)]
 
 
 _COMPACT = r"[0-9]{8}(?:[0-9]{6})?"
@@ -167,7 +199,8 @@ def parse_datajud_date(x: Iterable[str | None] | str | None) -> pd.Series:
     horários perto da meia-noite podem estar um dia fora.
 
     Returns:
-        Série ``datetime64[ns, UTC]``; valores não reconhecidos viram ``NaT``.
+        Série ``datetime64[ns, UTC]``, com o mesmo índice de ``x`` quando ``x``
+        é uma série; valores não reconhecidos viram ``NaT``.
 
     Examples:
         >>> parse_datajud_date(["2021-07-22T15:41:21.000Z", "20231110002114"]).tolist()
@@ -175,7 +208,8 @@ def parse_datajud_date(x: Iterable[str | None] | str | None) -> pd.Series:
     """
     if x is None or isinstance(x, str):
         x = [x]
-    s = pd.Series(list(x), dtype="object")
+    index = x.index if isinstance(x, pd.Series) else None
+    s = pd.Series(list(x), index=index, dtype="object")
     out = pd.Series(pd.NaT, index=s.index, dtype="datetime64[ns, UTC]")
 
     text = s.where(s.notna(), "").astype(str)
