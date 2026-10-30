@@ -10,7 +10,12 @@ datajud_request(
   size = 10,
   api_key = NULL,
   base_url = "https://api-publica.datajud.cnj.jus.br",
-  from = 0
+  from = 0,
+  source = NULL,
+  aggs = NULL,
+  track_total_hits = NULL,
+  max_tries = 5,
+  timeout = 120
 )
 }
 \arguments{
@@ -23,6 +28,20 @@ datajud_request(
 \item{api_key}{Character string with the API key. If NULL, uses get_api_key().}
 
 \item{base_url}{Character string with the base URL (default: "https://api-publica.datajud.cnj.jus.br").}
+
+\item{from}{Integer with the offset of the first result (default: 0).}
+
+\item{source}{Optional \verb{_source} filter, e.g. \code{list(excludes = list("movimentos"))}.}
+
+\item{aggs}{Optional list with Elasticsearch aggregations.}
+
+\item{track_total_hits}{Logical. If TRUE, asks for the exact total instead of
+the default lower bound of 10,000.}
+
+\item{max_tries}{Integer with the maximum number of attempts. Status 429, 5xx
+and connection errors are retried with exponential backoff.}
+
+\item{timeout}{Numeric with the timeout of each attempt, in seconds.}
 }
 \value{
 A list with the API response.

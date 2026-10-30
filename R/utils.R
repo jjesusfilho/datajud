@@ -38,6 +38,12 @@
 search_with_pagination <- function(tribunal, query, max_results = 100,
                                    size_per_request = 1000, api_key = NULL) {
 
+  warning(
+    "search_with_pagination() returns only the first page. ",
+    "Prefer search_slice() with small slices.",
+    call. = FALSE
+  )
+
   if (size_per_request > 10000) {
     warning("size_per_request cannot exceed 10000. Setting to 10000.")
     size_per_request <- 10000
