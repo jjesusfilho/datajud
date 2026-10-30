@@ -17,7 +17,9 @@ A list with the combined query.
 \description{
 Adds a filter on the first digits of \code{numeroProcesso} to a query. The first
 seven digits of the CNJ number are a sequential number, so prefixes split a
-slice into parts of similar size.
+slice into parts of similar size. Short prefixes match almost every number in
+the index and tend to exceed the gateway timeout; split by dates first (see
+\code{\link[=split_date_range]{split_date_range()}}) and use prefixes only when they are already long.
 }
 \examples{
 query <- list(term = list(classe.codigo = 49))

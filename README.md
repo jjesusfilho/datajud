@@ -143,12 +143,7 @@ query <- list(
   bool = list(
     must = list(
       list(match = list(classe.codigo = 1199)),
-      list(range = list(
-        dataAjuizamento = list(
-          gte = "2020-01-01",
-          lte = "2020-12-31"
-        )
-      ))
+      date_range_query("dataAjuizamento", "2020-01-01", "2020-12-31")
     )
   )
 )
@@ -178,6 +173,41 @@ raw_results <- search_cnj(
   parse = FALSE
 )
 ```
+
+**Filtre datas sempre com `date_range_query()`.** O DataJud grava as datas em dois formatos, ISO (`2024-01-16T12:41:15.000Z`) e compacto (`20240311124906`), e o índice lê as compactas como milissegundos desde 1970. Um `range` escrito à mão num formato só encontra os documentos gravados naquele formato; no TJAC, o filtro ISO achou 761 processos de um trimestre, o compacto 843, nenhum em comum, e o trimestre tem 1.604. `date_range_query()` combina os dois formatos, e `search_processes()` e `search_by_date()` já o usam. Nunca use a forma compacta de 8 dígitos (`"20240101"`): ela é lida como um instante de 1970.
+
+### Coleta robusta em fatias
+
+A API é lenta e instável em horário comercial (429 e 504 frequentes), pode devolver resultados parciais com status 200, e paginar com `from`/`size` sem ordenação repete e pula documentos. Para baixar muitos processos, divida a consulta em fatias pequenas e baixe cada uma numa requisição só com `search_slice()`. Ela conta os documentos antes de baixar, sinaliza o erro `datajud_slice_too_large` (com o campo `total`) se a fatia passar de `max_size` e só aceita respostas completas, repetindo com espera crescente.
+
+Divida as fatias grandes por datas com `split_date_range()`:
+
+```r
+max_size <- 1000
+
+baixar <- function(filtros, inicio, fim) {
+  consulta <- list(bool = list(filter = c(
+    filtros,
+    list(date_range_query("dataAjuizamento", inicio, fim))
+  )))
+  tryCatch(
+    list(search_slice("tjac", consulta, max_size = max_size,
+                      source = list(excludes = list("movimentos")))),
+    datajud_slice_too_large = function(e) {
+      partes <- split_date_range(inicio, fim, parts = e$total %/% max_size + 1)
+      do.call(c, Map(function(a, b) baixar(filtros, a, b), partes$start, partes$end))
+    }
+  )
+}
+
+fatias <- baixar(
+  list(list(term = list(classe.codigo = 7))),
+  as.Date("2024-01-01"), as.Date("2024-03-31")
+)
+processos <- do.call(rbind, fatias)
+```
+
+Prefixos curtos do número CNJ (`add_cnj_prefix()`, `split_by_cnj_prefix()`) casam com quase todo o índice e costumam estourar o tempo do gateway; use-os só para dividir um único dia que ainda seja grande demais, e com prefixos já longos. Leia as datas dos resultados com `parse_datajud_date()`.
 
 ### Busca com paginação automática
 
@@ -572,7 +602,7 @@ Os resultados tipicamente incluem:
 
 - A chave de API padrão é pública e pode ser alterada pelo CNJ a qualquer momento
 - A API possui limites de taxa (consulte a documentação oficial)
-- Máximo de 10.000 resultados por requisição (use paginação para mais)
+- Máximo de 10.000 resultados por requisição (para mais, divida em fatias com `search_slice()`)
 - Alguns processos podem ter informações restritas devido à confidencialidade
 - A API opera sob a Portaria Nº 160 (09/09/2020)
 

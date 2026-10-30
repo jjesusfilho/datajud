@@ -43,6 +43,67 @@ format_datajud_date <- function(date_input, time_suffix = "000000") {
   return(date_str)
 }
 
+#' Date Range Filter Covering Both Index Formats
+#'
+#' @description
+#' DataJud stores dates either in ISO 8601 (`2024-01-16T12:41:15.000Z`) or in a
+#' compact format (`20240311124906`). The index reads compact dates as
+#' milliseconds since 1970, so an ISO `range` only finds documents stored in
+#' ISO and a compact `range` only the compact ones. This filter combines both
+#' with `should`.
+#'
+#' @param field Character string with the date field, e.g. "dataAjuizamento".
+#' @param start Character string or Date with the start of the range
+#'   (inclusive).
+#' @param end Character string or Date with the end of the range (inclusive,
+#'   the whole day when only the date is given).
+#'
+#' @return A list with the Elasticsearch filter.
+#' @export
+#'
+#' @examples
+#' date_range_query("dataAjuizamento", "2024-01-01", "2024-01-31")
+date_range_query <- function(field, start = NULL, end = NULL) {
+  if (is.null(start) && is.null(end)) {
+    stop("At least one of start or end must be provided.")
+  }
+
+  compact_and_iso <- function(x, time_suffix, millis) {
+    compact <- format_datajud_date(x, time_suffix)
+    if (!grepl("^\\d{14}$", compact)) {
+      stop("Unrecognized date: ", x)
+    }
+    iso <- sprintf(
+      "%s-%s-%sT%s:%s:%s.%sZ",
+      substr(compact, 1, 4), substr(compact, 5, 6), substr(compact, 7, 8),
+      substr(compact, 9, 10), substr(compact, 11, 12), substr(compact, 13, 14),
+      millis
+    )
+    list(compact = compact, iso = iso)
+  }
+
+  iso <- list()
+  compact <- list()
+  if (!is.null(start)) {
+    d <- compact_and_iso(start, "000000", "000")
+    iso$gte <- d$iso
+    compact$gte <- d$compact
+  }
+  if (!is.null(end)) {
+    d <- compact_and_iso(end, "235959", "999")
+    iso$lte <- d$iso
+    compact$lte <- d$compact
+  }
+
+  list(bool = list(
+    should = list(
+      list(range = stats::setNames(list(iso), field)),
+      list(range = stats::setNames(list(compact), field))
+    ),
+    minimum_should_match = 1
+  ))
+}
+
 #' Search by CNJ Process Number
 #'
 #' @description
@@ -149,21 +210,7 @@ search_by_date <- function(tribunal, date_field = "dataAjuizamento",
     stop("At least one of start_date or end_date must be provided.")
   }
 
-  # Build range query
-  range_params <- list()
-  if (!is.null(start_date)) {
-    range_params$gte <- format_datajud_date(start_date, "000000")
-  }
-  if (!is.null(end_date)) {
-    range_params$lte <- format_datajud_date(end_date, "235959")
-  }
-
-  query <- list(
-    range = structure(
-      list(range_params),
-      names = date_field
-    )
-  )
+  query <- date_range_query(date_field, start_date, end_date)
 
   search_datajud(tribunal, query, size, parse, api_key)
 }
@@ -396,38 +443,23 @@ search_processes <- function(tribunal,
 
   # Date range parameters - dataAjuizamento
   if (!is.null(dataAjuizamento_start) || !is.null(dataAjuizamento_end)) {
-    range_params <- list()
-    if (!is.null(dataAjuizamento_start)) {
-      range_params$gte <- format_datajud_date(dataAjuizamento_start, "000000")
-    }
-    if (!is.null(dataAjuizamento_end)) {
-      range_params$lte <- format_datajud_date(dataAjuizamento_end, "235959")
-    }
-    must_conditions <- append(must_conditions, list(list(range = list(dataAjuizamento = range_params))))
+    must_conditions <- append(must_conditions, list(
+      date_range_query("dataAjuizamento", dataAjuizamento_start, dataAjuizamento_end)
+    ))
   }
 
   # Date range parameters - dataHoraUltimaAtualizacao
   if (!is.null(dataHoraUltimaAtualizacao_start) || !is.null(dataHoraUltimaAtualizacao_end)) {
-    range_params <- list()
-    if (!is.null(dataHoraUltimaAtualizacao_start)) {
-      range_params$gte <- format_datajud_date(dataHoraUltimaAtualizacao_start, "000000")
-    }
-    if (!is.null(dataHoraUltimaAtualizacao_end)) {
-      range_params$lte <- format_datajud_date(dataHoraUltimaAtualizacao_end, "235959")
-    }
-    must_conditions <- append(must_conditions, list(list(range = list(dataHoraUltimaAtualizacao = range_params))))
+    must_conditions <- append(must_conditions, list(
+      date_range_query("dataHoraUltimaAtualizacao", dataHoraUltimaAtualizacao_start, dataHoraUltimaAtualizacao_end)
+    ))
   }
 
   # Date range parameters - movimentos.dataHora
   if (!is.null(movimentos_dataHora_start) || !is.null(movimentos_dataHora_end)) {
-    range_params <- list()
-    if (!is.null(movimentos_dataHora_start)) {
-      range_params$gte <- format_datajud_date(movimentos_dataHora_start, "000000")
-    }
-    if (!is.null(movimentos_dataHora_end)) {
-      range_params$lte <- format_datajud_date(movimentos_dataHora_end, "235959")
-    }
-    must_conditions <- append(must_conditions, list(list(range = list(movimentos.dataHora = range_params))))
+    must_conditions <- append(must_conditions, list(
+      date_range_query("movimentos.dataHora", movimentos_dataHora_start, movimentos_dataHora_end)
+    ))
   }
 
   # Check that at least one search parameter was provided
@@ -573,16 +605,9 @@ search_processes_paginated <- function(tribunal,
     end_param <- date_ranges[[field]][2]
 
     if (!is.null(search_params[[start_param]]) || !is.null(search_params[[end_param]])) {
-      range_params <- list()
-      if (!is.null(search_params[[start_param]])) {
-        range_params$gte <- format_datajud_date(search_params[[start_param]], "000000")
-      }
-      if (!is.null(search_params[[end_param]])) {
-        range_params$lte <- format_datajud_date(search_params[[end_param]], "235959")
-      }
-      range_condition <- list()
-      range_condition[[field]] <- range_params
-      must_conditions <- append(must_conditions, list(list(range = range_condition)))
+      must_conditions <- append(must_conditions, list(
+        date_range_query(field, search_params[[start_param]], search_params[[end_param]])
+      ))
     }
   }
 

@@ -97,3 +97,24 @@ test_that("datajud_request retries 429 and stops on 400", {
   expect_error(datajud_request("tjsp", list(), api_key = "k"), "status 400")
   expect_equal(i, 1)
 })
+
+test_that("date_range_query covers both date formats", {
+  q <- date_range_query("dataAjuizamento", end = "20200131")
+  expect_equal(q$bool$should[[1]]$range$dataAjuizamento, list(lte = "2020-01-31T23:59:59.999Z"))
+  expect_equal(q$bool$should[[2]]$range$dataAjuizamento, list(lte = "20200131235959"))
+  expect_equal(q$bool$minimum_should_match, 1)
+  expect_error(date_range_query("dataAjuizamento", "31/01/2020"))
+
+  json <- jsonlite::toJSON(date_range_query("dataAjuizamento", as.Date("2024-01-01")), auto_unbox = TRUE)
+  expect_match(json, '"gte":"2024-01-01T00:00:00.000Z"', fixed = TRUE)
+  expect_match(json, '"gte":"20240101000000"', fixed = TRUE)
+})
+
+test_that("split_date_range builds contiguous ranges", {
+  parts <- split_date_range("2024-01-01", "2024-03-31", parts = 4)
+  expect_equal(parts$start[1], as.Date("2024-01-01"))
+  expect_equal(parts$end[4], as.Date("2024-03-31"))
+  expect_equal(as.integer(parts$start[-1] - parts$end[-4]), rep(1L, 3))
+  expect_equal(nrow(split_date_range("2024-01-01", "2024-01-02", parts = 10)), 2)
+  expect_error(split_date_range("2024-01-01", "2024-01-01"))
+})

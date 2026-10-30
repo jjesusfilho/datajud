@@ -114,7 +114,9 @@ request_complete <- function(..., check_hits = TRUE, max_tries = 5) {
 #' @description
 #' Adds a filter on the first digits of `numeroProcesso` to a query. The first
 #' seven digits of the CNJ number are a sequential number, so prefixes split a
-#' slice into parts of similar size.
+#' slice into parts of similar size. Short prefixes match almost every number in
+#' the index and tend to exceed the gateway timeout; split by dates first (see
+#' [split_date_range()]) and use prefixes only when they are already long.
 #'
 #' @param query List containing the Elasticsearch query.
 #' @param prefix Character string with the leading digits of the CNJ number.
@@ -144,7 +146,7 @@ add_cnj_prefix <- function(query, prefix) {
 #' @description
 #' Returns ten queries, one for each digit following `prefix`. Use it to split a
 #' slice that [search_slice()] refused as too large, descending one digit at a
-#' time.
+#' time. See the warning in [add_cnj_prefix()] about short prefixes.
 #'
 #' @param query List containing the Elasticsearch query, without prefix
 #'   filters.
@@ -160,6 +162,36 @@ add_cnj_prefix <- function(query, prefix) {
 split_by_cnj_prefix <- function(query, prefix = "") {
   prefixes <- paste0(prefix, 0:9)
   stats::setNames(lapply(prefixes, function(p) add_cnj_prefix(query, p)), prefixes)
+}
+
+#' Split a Date Range
+#'
+#' @description
+#' Splits the days from `start` to `end` into up to `parts` contiguous ranges.
+#' Use it to split a slice that [search_slice()] refused as too large: date
+#' filters ([date_range_query()]) are cheap, unlike short prefixes of the CNJ
+#' number. `total %/% max_size + 1`, with the `total` field of the
+#' `datajud_slice_too_large` error, is a good choice for `parts`.
+#'
+#' @param start Date or character string ("YYYY-MM-DD") with the first day.
+#' @param end Date or character string with the last day (inclusive).
+#' @param parts Integer with the number of ranges (at least 2).
+#'
+#' @return A tibble with columns `start` and `end` (Date), one row per range.
+#' @export
+#'
+#' @examples
+#' split_date_range("2024-01-01", "2024-01-10", parts = 3)
+split_date_range <- function(start, end, parts = 2) {
+  start <- as.Date(start)
+  end <- as.Date(end)
+  days <- as.integer(end - start) + 1
+  if (days < 2) {
+    stop("Cannot split a range of a single day.")
+  }
+  parts <- max(2, min(parts, days))
+  bounds <- start + (days * 0:parts) %/% parts
+  tibble::tibble(start = bounds[-length(bounds)], end = bounds[-1] - 1)
 }
 
 #' Parse DataJud Dates

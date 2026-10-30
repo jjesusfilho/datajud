@@ -19,7 +19,7 @@ A named list of ten queries. The names are the new prefixes.
 \description{
 Returns ten queries, one for each digit following \code{prefix}. Use it to split a
 slice that \code{\link[=search_slice]{search_slice()}} refused as too large, descending one digit at a
-time.
+time. See the warning in \code{\link[=add_cnj_prefix]{add_cnj_prefix()}} about short prefixes.
 }
 \examples{
 query <- list(term = list(classe.codigo = 49))
